@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>舒芙壯舉 抽獎系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green:#5A8A5E; --green-light:#7FB87F; --green-pale:#C8DFC8; --green-dark:#3A5C3E;
+    --cream:#F5F0E0; --cream-dark:#E8DFC8;
+    --brown:#4A3728; --brown-mid:#7A5C44; --brown-light:#C4A882;
+    --orange:#E8884A; --orange-light:#F0A870; --yellow:#F0C848;
+    --white:#FDFAF4; --sky:#B8C8D8; --red:#D95F52;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--cream);font-family:'Noto Sans TC',sans-serif;height:100vh;overflow:hidden;position:relative;}
+  body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,var(--green-pale) 1.5px,transparent 1.5px);background-size:28px 28px;opacity:.5;pointer-events:none;}
+
+  /* HEADER */
+  header{position:fixed;top:0;left:0;right:0;height:64px;background:var(--green-dark);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:20;box-shadow:0 3px 0 var(--brown);}
+  .header-logo{display:flex;align-items:center;gap:10px;}
+  .logo-circle{width:40px;height:40px;border-radius:50%;background:var(--cream);border:2px solid var(--brown-light);display:flex;align-items:center;justify-content:center;font-size:20px;}
+  .header-title{font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--cream);}
+  .header-sub{font-size:10px;color:var(--green-pale);letter-spacing:3px;}
+  .header-actions{display:flex;gap:8px;align-items:center;}
+  .hdr-btn{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);color:var(--cream);padding:6px 14px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;border-radius:20px;cursor:pointer;transition:all .2s;letter-spacing:1px;white-space:nowrap;}
+  .hdr-btn:hover{background:rgba(255,255,255,.22);}
+  .hdr-btn.orange{background:rgba(232,136,74,.35);border-color:var(--orange);}
+
+  /* LAYOUT */
+  .app{display:grid;grid-template-columns:260px 1fr 260px;height:100vh;padding-top:64px;}
+  .left-panel{background:var(--white);border-right:3px solid var(--brown);display:flex;flex-direction:column;overflow:hidden;}
+  .right-panel{background:var(--white);border-left:3px solid var(--brown);display:flex;flex-direction:column;overflow:hidden;}
+  .panel-header{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--brown);flex-shrink:0;}
+  .left-panel .panel-header{background:var(--green);}
+  .right-panel .panel-header{background:var(--orange);}
+  .panel-header h2{font-family:'Nunito',sans-serif;font-weight:900;font-size:14px;color:var(--white);letter-spacing:1px;}
+  .badge{background:var(--yellow);color:var(--brown);font-family:'Nunito',sans-serif;font-size:11px;font-weight:900;padding:3px 9px;border-radius:12px;border:1.5px solid var(--brown);white-space:nowrap;}
+  .scrollable{flex:1;overflow-y:auto;padding:10px;}
+  .scrollable::-webkit-scrollbar{width:5px;}
+  .scrollable::-webkit-scrollbar-thumb{background:var(--green-pale);border-radius:3px;}
+  .right-panel .scrollable::-webkit-scrollbar-thumb{background:var(--orange-light);}
+
+  /* NAME ITEMS */
+  .name-item{display:flex;align-items:center;gap:8px;padding:8px 11px;border-radius:10px;margin-bottom:5px;background:var(--cream);border:2px solid var(--cream-dark);transition:all .3s;}
+  .name-item.drawn{opacity:.28;text-decoration:line-through;background:#eee;border-color:#ddd;}
+  .name-item.winner-flash{background:var(--yellow);border-color:var(--orange);animation:winnerPulse .5s ease 4;}
+  @keyframes winnerPulse{0%,100%{transform:scale(1.02);}50%{transform:scale(1.06);box-shadow:0 0 14px rgba(232,136,74,.5);}}
+  .name-avatar{width:28px;height:28px;border-radius:50%;background:var(--green-pale);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:var(--green-dark);flex-shrink:0;font-family:'Nunito',sans-serif;}
+  .name-info{flex:1;min-width:0;}
+  .name-text{font-size:13px;font-weight:700;color:var(--brown);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .name-tickets{font-size:10px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--brown-mid);letter-spacing:.5px;}
+  .ticket-bar-wrap{width:100%;height:3px;background:var(--cream-dark);border-radius:2px;margin-top:3px;}
+  .ticket-bar{height:100%;background:var(--green-light);border-radius:2px;transition:width .4s;}
+  .ticket-count-badge{font-family:'Nunito',sans-serif;font-size:11px;font-weight:900;color:var(--white);background:var(--green);padding:2px 7px;border-radius:8px;border:1.5px solid var(--brown);flex-shrink:0;}
+  .name-item.drawn .ticket-count-badge{background:var(--brown-light);}
+
+  /* CENTER */
+  .center-panel{display:flex;flex-direction:column;align-items:stretch;position:relative;background:var(--sky);overflow:hidden;}
+  .video-wrapper{flex:1;position:relative;overflow:hidden;cursor:pointer;background:var(--sky);min-height:0;}
+  #lottery-video{width:100%;height:100%;object-fit:contain;display:block;}
+  .video-click-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(140,165,185,.45);backdrop-filter:blur(1px);transition:opacity .3s;z-index:5;}
+  .video-click-overlay.hidden{opacity:0;pointer-events:none;}
+  .play-circle{width:76px;height:76px;border-radius:50%;background:var(--yellow);border:4px solid var(--brown);display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:4px 4px 0 var(--brown);animation:bouncePulse 2s ease-in-out infinite;}
+  @keyframes bouncePulse{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
+  .click-hint{margin-top:12px;font-family:'Nunito',sans-serif;font-weight:900;font-size:15px;color:var(--cream);letter-spacing:2px;text-shadow:1px 1px 0 var(--brown);}
+  .video-state-badge{position:absolute;top:12px;left:12px;background:var(--orange);color:var(--white);font-family:'Nunito',sans-serif;font-weight:900;font-size:12px;padding:4px 12px;border-radius:20px;border:2px solid var(--brown);z-index:6;display:none;}
+  .video-state-badge.show{display:block;}
+  .bottom-bar{background:rgba(255,255,255,.32);border-top:2px solid rgba(255,255,255,.5);backdrop-filter:blur(6px);padding:10px 20px 8px;flex-shrink:0;}
+  .winner-row{display:flex;align-items:center;justify-content:space-between;}
+  .winner-label{font-family:'Nunito',sans-serif;font-size:10px;font-weight:900;color:var(--brown);letter-spacing:3px;text-transform:uppercase;opacity:.6;margin-bottom:2px;}
+  .winner-name{font-family:'Nunito',sans-serif;font-weight:900;font-size:28px;color:var(--brown-mid);}
+  .winner-name.rolling{color:var(--orange);animation:shake .07s ease-in-out infinite;}
+  .winner-name.revealed{color:var(--green-dark);animation:popIn .5s cubic-bezier(.34,1.56,.64,1) forwards;}
+  @keyframes shake{0%,100%{transform:translateX(-2px);}50%{transform:translateX(2px);}}
+  @keyframes popIn{0%{transform:scale(.6);opacity:0;}70%{transform:scale(1.1);}100%{transform:scale(1);opacity:1;}}
+  .winner-trophy{font-size:36px;}
+  .winner-trophy.active{animation:trophyBounce .5s ease 1;}
+  @keyframes trophyBounce{0%{transform:rotate(-15deg) scale(.7);}60%{transform:rotate(8deg) scale(1.2);}100%{transform:scale(1);}}
+  .status-hint{font-size:11px;color:var(--brown);font-weight:700;letter-spacing:1px;opacity:.5;margin-top:3px;}
+
+  /* PRIZE SELECTOR */
+  .prize-selector{padding:10px;border-bottom:2px solid var(--cream-dark);flex-shrink:0;}
+  .prize-selector label{font-size:10px;font-weight:700;color:var(--brown-mid);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:6px;}
+  .prize-select{width:100%;background:var(--cream);border:2px solid var(--cream-dark);border-radius:10px;padding:8px 12px;font-family:'Noto Sans TC',sans-serif;font-size:13px;color:var(--brown);outline:none;cursor:pointer;}
+  .prize-select:focus{border-color:var(--orange);}
+
+  /* HISTORY */
+  .history-item{display:flex;align-items:flex-start;gap:8px;padding:9px 11px;border-radius:10px;margin-bottom:5px;background:var(--cream);border:2px solid var(--cream-dark);animation:slideIn .35s ease forwards;opacity:0;transform:translateX(20px);}
+  @keyframes slideIn{to{opacity:1;transform:translateX(0);}}
+  .history-rank{width:24px;height:24px;border-radius:50%;background:var(--orange);color:var(--white);font-family:'Nunito',sans-serif;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;border:2px solid var(--brown);flex-shrink:0;margin-top:1px;}
+  .history-info{flex:1;min-width:0;}
+  .history-name{font-size:13px;font-weight:700;color:var(--brown);}
+  .history-meta{font-size:10px;color:var(--brown-light);font-family:'Nunito',sans-serif;margin-top:1px;}
+  .empty-state{text-align:center;padding:32px 16px;color:var(--brown-light);font-size:12px;font-weight:600;letter-spacing:1px;}
+  .empty-state .empty-icon{font-size:36px;margin-bottom:8px;}
+  .total-bar{padding:10px 14px;border-top:2px solid var(--cream-dark);background:var(--cream);flex-shrink:0;font-size:11px;color:var(--brown-mid);font-weight:700;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center;}
+  .total-tickets{font-family:'Nunito',sans-serif;font-size:14px;font-weight:900;color:var(--green-dark);}
+
+  /* ════════════════════════════════
+     WINNER POPUP (multi-winner)
+  ════════════════════════════════ */
+  .popup-bg{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:rgba(20,12,5,.7);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .35s ease;}
+  .popup-bg.show{opacity:1;pointer-events:all;}
+
+  .popup-box{
+    background:var(--cream);border:4px solid var(--brown);border-radius:24px;
+    box-shadow:10px 10px 0 var(--brown);
+    width:min(680px,94vw);max-height:88vh;
+    display:flex;flex-direction:column;
+    animation:popupIn .4s cubic-bezier(.34,1.56,.64,1) forwards;
+    overflow:hidden;
+  }
+  @keyframes popupIn{0%{transform:scale(.75) translateY(30px);opacity:0;}100%{transform:scale(1) translateY(0);opacity:1;}}
+
+  /* popup header */
+  .popup-head{
+    background:var(--green-dark);padding:20px 28px 16px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:3px solid var(--brown);
+  }
+  .popup-head-left{}
+  .popup-prize-tag{display:inline-block;background:var(--orange);color:var(--white);font-family:'Nunito',sans-serif;font-weight:900;font-size:12px;padding:3px 14px;border-radius:20px;border:2px solid var(--brown-light);letter-spacing:2px;margin-bottom:4px;}
+  .popup-title{font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;color:var(--cream);}
+  .popup-subtitle{font-size:11px;color:var(--green-pale);letter-spacing:2px;margin-top:1px;}
+  .popup-close-hint{font-size:11px;color:rgba(255,255,255,.4);font-family:'Nunito',sans-serif;font-weight:700;cursor:pointer;letter-spacing:1px;padding:6px 10px;border:1px solid rgba(255,255,255,.2);border-radius:12px;transition:all .2s;}
+  .popup-close-hint:hover{background:rgba(255,255,255,.1);}
+
+  /* winner cards grid */
+  .popup-body{padding:20px 24px;overflow-y:auto;flex:1;}
+  .popup-body::-webkit-scrollbar{width:5px;}
+  .popup-body::-webkit-scrollbar-thumb{background:var(--cream-dark);border-radius:3px;}
+
+  .winners-grid{display:grid;gap:12px;}
+
+  .winner-card{
+    background:var(--white);border:2.5px solid var(--cream-dark);
+    border-radius:16px;padding:14px 18px;
+    display:flex;align-items:center;gap:14px;
+    transition:all .25s;position:relative;overflow:hidden;
+  }
+  .winner-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--green);border-radius:0;}
+  .winner-card.claimed::before{background:var(--green);}
+  .winner-card.voided::before{background:var(--red);}
+  .winner-card.pending::before{background:var(--orange);animation:pendingPulse 1.2s ease-in-out infinite;}
+  @keyframes pendingPulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+  .winner-card.claimed{background:#F0F8F0;border-color:var(--green-pale);}
+  .winner-card.voided{background:#FDF5F4;border-color:#F0C0BC;opacity:.55;}
+
+  .wc-rank{
+    width:36px;height:36px;border-radius:50%;
+    background:var(--yellow);border:2px solid var(--brown);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Nunito',sans-serif;font-weight:900;font-size:15px;color:var(--brown);
+    flex-shrink:0;
+  }
+  .winner-card.claimed .wc-rank{background:var(--green);color:var(--white);border-color:var(--green-dark);}
+  .winner-card.voided .wc-rank{background:#ccc;color:#888;}
+
+  .wc-info{flex:1;min-width:0;}
+  .wc-name{font-family:'Nunito',sans-serif;font-weight:900;font-size:19px;color:var(--brown);}
+  .winner-card.voided .wc-name{color:#aaa;}
+  .wc-meta{font-size:11px;color:var(--brown-light);font-family:'Nunito',sans-serif;font-weight:700;margin-top:1px;}
+
+  .wc-status{
+    font-family:'Nunito',sans-serif;font-weight:900;font-size:12px;letter-spacing:1px;
+    padding:4px 12px;border-radius:20px;flex-shrink:0;
+  }
+  .wc-status.claimed-label{background:var(--green-pale);color:var(--green-dark);border:1.5px solid var(--green);}
+  .wc-status.voided-label{background:#F0C0BC;color:var(--red);border:1.5px solid var(--red);}
+
+  /* claim + void buttons */
+  .wc-actions{display:flex;gap:8px;flex-shrink:0;}
+
+  .btn-claim{
+    background:var(--green);color:var(--white);
+    border:2px solid var(--brown);border-radius:10px;
+    padding:8px 16px;font-family:'Nunito',sans-serif;
+    font-weight:900;font-size:13px;letter-spacing:1px;
+    cursor:pointer;box-shadow:2px 2px 0 var(--brown);
+    transition:all .15s;white-space:nowrap;
+  }
+  .btn-claim:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--brown);}
+  .btn-claim:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--brown);}
+
+  .btn-void{
+    background:var(--cream);color:var(--brown-mid);
+    border:2px solid var(--cream-dark);border-radius:10px;
+    padding:8px 12px;font-family:'Nunito',sans-serif;
+    font-weight:700;font-size:12px;
+    cursor:pointer;transition:all .15s;white-space:nowrap;
+  }
+  .btn-void:hover{border-color:var(--red);color:var(--red);}
+
+  /* popup footer */
+  .popup-footer{
+    padding:14px 24px;border-top:2px solid var(--cream-dark);
+    background:var(--cream);flex-shrink:0;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+  }
+  .popup-summary{font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--brown-mid);}
+  .popup-summary span{color:var(--green-dark);font-weight:900;}
+  .popup-footer-actions{display:flex;gap:10px;}
+
+  .btn-redraw{
+    background:var(--yellow);color:var(--brown);
+    border:2px solid var(--brown);border-radius:12px;
+    padding:10px 20px;font-family:'Nunito',sans-serif;
+    font-weight:900;font-size:14px;letter-spacing:1px;
+    cursor:pointer;box-shadow:3px 3px 0 var(--brown);
+    transition:all .15s;
+  }
+  .btn-redraw:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--brown);}
+  .btn-redraw:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--brown);}
+  .btn-redraw:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:3px 3px 0 var(--brown);}
+
+  .btn-finish{
+    background:var(--green-dark);color:var(--white);
+    border:2px solid var(--brown);border-radius:12px;
+    padding:10px 20px;font-family:'Nunito',sans-serif;
+    font-weight:900;font-size:14px;letter-spacing:1px;
+    cursor:pointer;box-shadow:3px 3px 0 var(--brown);
+    transition:all .15s;
+  }
+  .btn-finish:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--brown);}
+  .btn-finish:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--brown);}
+
+  /* redraw animation overlay inside popup */
+  .redraw-overlay{
+    position:absolute;inset:0;background:rgba(245,240,224,.88);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    z-index:10;border-radius:20px;
+    opacity:0;pointer-events:none;transition:opacity .2s;
+  }
+  .redraw-overlay.show{opacity:1;pointer-events:all;}
+  .redraw-spin{font-size:52px;animation:spin .6s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .redraw-text{font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--brown);margin-top:12px;letter-spacing:2px;}
+
+  /* CONFIG MODAL */
+  .modal-bg{position:fixed;inset:0;background:rgba(58,40,24,.5);z-index:100;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+  .modal-bg.open{display:flex;}
+  .modal{background:var(--white);border:3px solid var(--brown);border-radius:20px;box-shadow:8px 8px 0 var(--brown);padding:28px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;}
+  .modal h3{font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--brown);margin-bottom:20px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:10px;font-weight:700;color:var(--brown-mid);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px;}
+  .field input{width:100%;background:var(--cream);border:2px solid var(--cream-dark);border-radius:10px;padding:9px 12px;font-family:'Noto Sans TC',sans-serif;font-size:13px;color:var(--brown);outline:none;transition:border-color .2s;}
+  .field input:focus{border-color:var(--green);}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .btn-save{flex:1;background:var(--green);color:var(--white);border:2px solid var(--brown);border-radius:12px;padding:11px;font-family:'Nunito',sans-serif;font-weight:900;font-size:14px;cursor:pointer;box-shadow:3px 3px 0 var(--brown);transition:all .15s;}
+  .btn-save:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--brown);}
+  .btn-cancel{background:var(--cream);color:var(--brown);border:2px solid var(--brown);border-radius:12px;padding:11px 16px;font-family:'Nunito',sans-serif;font-weight:900;font-size:14px;cursor:pointer;box-shadow:3px 3px 0 var(--brown);transition:all .15s;}
+  .build-btn{width:100%;background:var(--yellow);color:var(--brown);border:2px solid var(--brown);border-radius:10px;padding:10px;font-family:'Nunito',sans-serif;font-weight:900;font-size:13px;cursor:pointer;box-shadow:3px 3px 0 var(--brown);transition:all .15s;letter-spacing:1px;margin-top:4px;}
+
+  #confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:50;}
+</style>
+</head>
+<body>
+<canvas id="confetti-canvas"></canvas>
+
+<!-- ══ WINNER POPUP ══ -->
+<div class="popup-bg" id="popup-bg">
+  <div class="popup-box" id="popup-box">
+    <!-- redraw overlay -->
+    <div class="redraw-overlay" id="redraw-overlay">
+      <div class="redraw-spin">🎰</div>
+      <div class="redraw-text">重抽中...</div>
+    </div>
+
+    <!-- head -->
+    <div class="popup-head">
+      <div class="popup-head-left">
+        <div class="popup-prize-tag" id="popup-prize-tag">獎項</div>
+        <div class="popup-title" id="popup-title">得獎名單</div>
+        <div class="popup-subtitle" id="popup-subtitle">請確認是否在現場</div>
+      </div>
+      <div class="popup-close-hint" onclick="closePopup()">✕ 關閉</div>
+    </div>
+
+    <!-- winner cards -->
+    <div class="popup-body">
+      <div class="winners-grid" id="winners-grid"></div>
+    </div>
+
+    <!-- footer -->
+    <div class="popup-footer">
+      <div class="popup-summary" id="popup-summary"></div>
+      <div class="popup-footer-actions">
+        <button class="btn-redraw" id="btn-redraw" onclick="redrawMissing()">🔄 重抽未領獎名額</button>
+        <button class="btn-finish" onclick="finishDraw()">✅ 完成抽獎</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-logo">
+    <div class="logo-circle">🏋️</div>
+    <div>
+      <div class="header-title">舒芙壯舉</div>
+      <div class="header-sub">LUCKY DRAW</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="hdr-btn orange" onclick="buildAndReload()">🔄 建立總表</button>
+    <button class="hdr-btn" onclick="loadPool()">↺ 刷新</button>
+    <button class="hdr-btn" onclick="openConfig()">⚙ 設定</button>
+  </div>
+</header>
+
+<!-- APP -->
+<div class="app">
+  <!-- LEFT -->
+  <div class="left-panel">
+    <div class="panel-header">
+      <h2>🎯 抽獎名單</h2>
+      <div class="badge" id="pool-badge">載入中</div>
+    </div>
+    <div class="scrollable" id="name-list">
+      <div class="empty-state"><div class="empty-icon">📋</div>請設定 URL 並建立總表</div>
+    </div>
+    <div class="total-bar">
+      <span>總抽獎券</span>
+      <span class="total-tickets" id="total-tickets-display">—</span>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="center-panel">
+    <div class="video-wrapper" id="video-wrapper" onclick="handleVideoClick()">
+      <video id="lottery-video" preload="auto">
+        <source src="draw.mp4" type="video/mp4">
+      </video>
+      <div class="video-click-overlay" id="click-overlay">
+        <div class="play-circle" id="play-icon">🎲</div>
+        <div class="click-hint" id="click-hint">點擊開始抽獎</div>
+      </div>
+      <div class="video-state-badge" id="state-badge">🎰 抽獎中...</div>
+    </div>
+    <div class="bottom-bar">
+      <div class="winner-row">
+        <div>
+          <div class="winner-label">🏆 本輪抽獎</div>
+          <div class="winner-name" id="winner-name">—</div>
+        </div>
+        <div class="winner-trophy" id="winner-trophy">🎁</div>
+      </div>
+      <div class="status-hint" id="status-hint">請設定 Apps Script URL</div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-panel">
+    <div class="panel-header">
+      <h2>🎁 選擇獎項</h2>
+      <div class="badge" id="history-badge">0</div>
+    </div>
+    <div class="prize-selector">
+      <label>本輪抽取獎項</label>
+      <select class="prize-select" id="prize-select">
+        <option value="">— 載入中 —</option>
+      </select>
+    </div>
+    <div class="scrollable" id="history-list">
+      <div class="empty-state"><div class="empty-icon">🌟</div>尚無得獎紀錄</div>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIG -->
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeConfig()">
+  <div class="modal">
+    <h3>⚙️ 系統設定</h3>
+    <div class="field">
+      <label>Apps Script Web App URL</label>
+      <input type="text" id="cfg-url" placeholder="https://script.google.com/macros/s/...">
+    </div>
+    <button class="build-btn" onclick="buildAndReload()">🔄 建立總表（抽獎前執行）</button>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeConfig()">取消</button>
+      <button class="btn-save" onclick="saveConfig()">儲存並載入</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ STATE ══
+let CONFIG = { url: localStorage.getItem('lottery_url') || '' };
+let pool   = [];          // { name, total, drawn, remaining }
+let drawn  = [];          // names fully done (claimed or voided)
+let totalTickets = 0;
+let isRunning = false;
+let rollInterval = null;
+let historyCount = 0;
+
+// Current draw session state
+let currentPrize      = '';
+let currentPrizeQty   = 0;    // total slots this draw
+let currentWinners    = [];   // [{ name, tickets, status:'pending'|'claimed'|'voided' }]
+let pendingRedrawSlots = 0;   // slots still needing fill after voiding
+
+// ══ INIT ══
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('cfg-url').value = CONFIG.url;
+  document.getElementById('lottery-video').addEventListener('ended', onVideoEnded);
+  if (CONFIG.url) { loadPool(); loadPrizes(); }
+  else { setHint('請點右上角 ⚙ 設定 URL'); document.getElementById('pool-badge').textContent = '未設定'; }
+});
+
+// ══ CONFIG ══
+function openConfig()  { document.getElementById('modal-bg').classList.add('open'); }
+function closeConfig() { document.getElementById('modal-bg').classList.remove('open'); }
+function saveConfig() {
+  CONFIG.url = document.getElementById('cfg-url').value.trim();
+  localStorage.setItem('lottery_url', CONFIG.url);
+  closeConfig(); loadPool(); loadPrizes();
+}
+
+// ══ BUILD SUMMARY ══
+async function buildAndReload() {
+  if (!CONFIG.url) { openConfig(); return; }
+  setHint('建立總表中...');
+  try {
+    const res = await fetch(CONFIG.url, { method:'POST', body: JSON.stringify({ action:'buildSummary' }) });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    setHint(`✅ 總表建立完成（${data.count} 人）`);
+    setTimeout(loadPool, 600);
+  } catch(e) { setHint('❌ ' + e.message); }
+}
+
+// ══ LOAD POOL ══
+async function loadPool() {
+  if (!CONFIG.url) return;
+  setHint('讀取名單中...');
+  document.getElementById('pool-badge').textContent = '...';
+  try {
+    const res = await fetch(`${CONFIG.url}?action=getPool`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    pool = data.pool.filter(p => !drawn.includes(p.name));
+    totalTickets = pool.reduce((s,p) => s + p.remaining, 0);
+    renderNameList();
+    setHint(pool.length > 0 ? '點擊影片開始抽獎 🎲' : '名單已全部抽完 🎊');
+  } catch(e) { setHint('❌ ' + e.message); document.getElementById('pool-badge').textContent = '錯誤'; }
+}
+
+// ══ LOAD PRIZES ══
+async function loadPrizes() {
+  if (!CONFIG.url) return;
+  try {
+    const res = await fetch(`${CONFIG.url}?action=getPrizes`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    const sel = document.getElementById('prize-select');
+    sel.innerHTML = '<option value="">— 選擇獎項 —</option>';
+    data.prizes.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.name;
+      opt.dataset.qty = p.remaining;
+      opt.textContent = `${p.name}（${p.remaining} 個）`;
+      sel.appendChild(opt);
+    });
+  } catch(e) { document.getElementById('prize-select').innerHTML = '<option value="">載入失敗</option>'; }
+}
+
+// ══ RENDER NAME LIST ══
+function renderNameList() {
+  const container = document.getElementById('name-list');
+  const badge     = document.getElementById('pool-badge');
+  const totalEl   = document.getElementById('total-tickets-display');
+  totalTickets = pool.reduce((s,p) => s + p.remaining, 0);
+  const maxT = pool.length > 0 ? Math.max(...pool.map(p => p.total)) : 1;
+
+  if (pool.length + drawn.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>名單為空</div>';
+    badge.textContent = '0人'; totalEl.textContent = '0 張'; return;
+  }
+  badge.textContent = `${pool.length} 人`;
+  totalEl.textContent = `${totalTickets} 張`;
+  container.innerHTML = '';
+
+  [...pool, ...drawn.map(n => ({ name:n, _done:true }))].forEach(p => {
+    const isDone = p._done;
+    const div = document.createElement('div');
+    div.className = 'name-item' + (isDone ? ' drawn' : '');
+    div.id = `name-${CSS.escape(p.name)}`;
+    if (isDone) {
+      div.innerHTML = `<div class="name-avatar">${p.name.slice(0,1)}</div><div class="name-info"><div class="name-text">${p.name}</div><div class="name-tickets">已完成</div></div><div class="ticket-count-badge">✓</div>`;
+    } else {
+      const pct  = Math.round((p.remaining / maxT) * 100);
+      const prob = totalTickets > 0 ? ((p.remaining / totalTickets)*100).toFixed(1) : 0;
+      div.innerHTML = `<div class="name-avatar">${p.name.slice(0,1)}</div><div class="name-info"><div class="name-text">${p.name}</div><div class="name-tickets">🎟 ${p.remaining} 張（${prob}%）</div><div class="ticket-bar-wrap"><div class="ticket-bar" style="width:${pct}%"></div></div></div><div class="ticket-count-badge">${p.remaining}</div>`;
+    }
+    container.appendChild(div);
+  });
+}
+
+// ══ VIDEO CLICK ══
+function handleVideoClick() {
+  if (isRunning) return;
+  if (!CONFIG.url) { openConfig(); return; }
+  if (pool.length === 0) { setHint('名單已全部抽完 🎊'); return; }
+
+  const sel = document.getElementById('prize-select');
+  currentPrize    = sel.value;
+  currentPrizeQty = currentPrize ? parseInt(sel.selectedOptions[0]?.dataset.qty || 1) : 1;
+
+  if (!currentPrize) { setHint('⚠️ 請先選擇獎項'); return; }
+  startDraw(currentPrizeQty);
+}
+
+// ══ WEIGHTED PICK (unique, n items) ══
+function weightedPickN(n) {
+  const available = [...pool]; // shallow copy
+  const picks = [];
+  for (let i = 0; i < n && available.length > 0; i++) {
+    const total = available.reduce((s,p) => s + p.remaining, 0);
+    if (total === 0) break;
+    let rand = Math.random() * total;
+    let chosen;
+    for (const p of available) { rand -= p.remaining; if (rand <= 0) { chosen = p; break; } }
+    if (!chosen) chosen = available[available.length - 1];
+    picks.push(chosen);
+    available.splice(available.indexOf(chosen), 1);
+  }
+  return picks;
+}
+
+function startDraw(qty) {
+  isRunning = true;
+  document.getElementById('click-overlay').classList.add('hidden');
+  document.getElementById('state-badge').classList.add('show');
+
+  const winnerEl = document.getElementById('winner-name');
+  winnerEl.className = 'winner-name rolling';
+  winnerEl.textContent = pool[0].name;
+
+  rollInterval = setInterval(() => {
+    winnerEl.textContent = pool[Math.floor(Math.random() * pool.length)].name;
+  }, 75);
+
+  const video = document.getElementById('lottery-video');
+  video.currentTime = 0;
+  const p = video.play();
+  if (p !== undefined) p.catch(() => { window._fallbackTimer = setTimeout(onVideoEnded, 3500); });
+}
+
+function onVideoEnded() {
+  if (!isRunning) return;
+  clearInterval(rollInterval);
+  clearTimeout(window._fallbackTimer);
+  const video = document.getElementById('lottery-video');
+  video.pause(); video.currentTime = 0;
+
+  // Pick winners
+  const picks = weightedPickN(currentPrizeQty);
+  currentWinners = picks.map(p => ({ name: p.name, tickets: p.remaining, status: 'pending' }));
+  pendingRedrawSlots = 0;
+
+  // Remove from active pool temporarily (they're "in limbo" until claimed/voided)
+  picks.forEach(p => { pool = pool.filter(x => x.name !== p.name); });
+  totalTickets = pool.reduce((s,p) => s + p.remaining, 0);
+
+  // Show bottom bar (first winner as teaser)
+  const winnerEl = document.getElementById('winner-name');
+  winnerEl.textContent = picks.length === 1 ? picks[0].name : `${picks.length} 位得獎者`;
+  winnerEl.className = 'winner-name revealed';
+  const trophy = document.getElementById('winner-trophy');
+  trophy.className = 'winner-trophy active';
+  setTimeout(() => { trophy.className = 'winner-trophy'; }, 600);
+
+  renderNameList();
+  launchConfetti();
+  setHint(`🎉 抽出 ${picks.length} 位！請確認是否在現場`);
+
+  // Reset overlay
+  document.getElementById('click-overlay').classList.remove('hidden');
+  document.getElementById('state-badge').classList.remove('show');
+  document.getElementById('play-icon').textContent  = pool.length > 0 ? '🎲' : '🎊';
+  document.getElementById('click-hint').textContent = pool.length > 0 ? '繼續下一輪抽獎' : '全部抽完囉！';
+
+  isRunning = false;
+  setTimeout(showPopup, 500);
+}
+
+// ══ POPUP ══
+function showPopup() {
+  document.getElementById('popup-prize-tag').textContent = currentPrize || '🎉 得獎';
+  document.getElementById('popup-title').textContent = `🏆 得獎名單`;
+  renderWinnerCards();
+  document.getElementById('popup-bg').classList.add('show');
+}
+
+function renderWinnerCards() {
+  const grid = document.getElementById('winners-grid');
+  grid.innerHTML = '';
+
+  // auto cols based on count
+  const count = currentWinners.length;
+  grid.style.gridTemplateColumns = count <= 3 ? '1fr' : 'repeat(2,1fr)';
+
+  currentWinners.forEach((w, idx) => {
+    const card = document.createElement('div');
+    card.className = `winner-card ${w.status}`;
+    card.id = `wc-${idx}`;
+
+    let actionsHTML = '';
+    if (w.status === 'pending') {
+      actionsHTML = `
+        <div class="wc-actions">
+          <button class="btn-claim" onclick="claimWinner(${idx})">✅ 領獎</button>
+          <button class="btn-void"  onclick="voidWinner(${idx})">✗ 不在場</button>
+        </div>`;
+    } else if (w.status === 'claimed') {
+      actionsHTML = `<div class="wc-status claimed-label">✅ 已領獎</div>`;
+    } else {
+      actionsHTML = `<div class="wc-status voided-label">✗ 已作廢</div>`;
+    }
+
+    card.innerHTML = `
+      <div class="wc-rank">${w.status === 'claimed' ? '✓' : w.status === 'voided' ? '✗' : idx+1}</div>
+      <div class="wc-info">
+        <div class="wc-name">${w.name}</div>
+        <div class="wc-meta">🎟 持有 ${w.tickets} 張抽獎券</div>
+      </div>
+      ${actionsHTML}
+    `;
+    grid.appendChild(card);
+  });
+
+  updatePopupSummary();
+}
+
+function claimWinner(idx) {
+  const w = currentWinners[idx];
+  if (w.status !== 'pending') return;
+  w.status = 'claimed';
+  // add to drawn permanently
+  drawn.push(w.name);
+  // save to sheet
+  saveResultToSheet(w.name, w.tickets, currentPrize);
+  addHistory(w.name, w.tickets, currentPrize);
+  renderWinnerCards();
+  launchConfetti();
+}
+
+function voidWinner(idx) {
+  const w = currentWinners[idx];
+  if (w.status !== 'pending') return;
+  w.status = 'voided';
+  // put them back into the pool as "drawn/voided" so they can't win again
+  drawn.push(w.name);
+  renderNameList();
+  renderWinnerCards();
+}
+
+function updatePopupSummary() {
+  const claimed = currentWinners.filter(w => w.status === 'claimed').length;
+  const voided  = currentWinners.filter(w => w.status === 'voided').length;
+  const pending = currentWinners.filter(w => w.status === 'pending').length;
+  const total   = currentWinners.length;
+
+  document.getElementById('popup-subtitle').textContent = `共 ${total} 個名額`;
+  document.getElementById('popup-summary').innerHTML =
+    `已領獎 <span>${claimed}</span>／${total}　作廢 ${voided}　待確認 ${pending}`;
+
+  const voidedSlots = voided; // voided can be redrawn
+  const redrawBtn = document.getElementById('btn-redraw');
+  redrawBtn.disabled = (voidedSlots === 0 || pool.length === 0 || pending > 0);
+  redrawBtn.textContent = voidedSlots > 0 ? `🔄 重抽 ${voidedSlots} 個名額` : '🔄 重抽未領獎名額';
+}
+
+async function redrawMissing() {
+  const voidedCount = currentWinners.filter(w => w.status === 'voided').length;
+  if (voidedCount === 0 || pool.length === 0) return;
+
+  // Show redraw overlay
+  document.getElementById('redraw-overlay').classList.add('show');
+
+  // Short dramatic delay
+  await new Promise(r => setTimeout(r, 1200));
+
+  // Remove voided entries from currentWinners
+  currentWinners = currentWinners.filter(w => w.status !== 'voided');
+
+  // Pick new winners
+  const newPicks = weightedPickN(voidedCount);
+  newPicks.forEach(p => {
+    currentWinners.push({ name: p.name, tickets: p.remaining, status: 'pending' });
+    pool = pool.filter(x => x.name !== p.name);
+  });
+  totalTickets = pool.reduce((s,p) => s + p.remaining, 0);
+  renderNameList();
+
+  document.getElementById('redraw-overlay').classList.remove('show');
+  renderWinnerCards();
+  launchConfetti();
+}
+
+function finishDraw() {
+  // Any still-pending get voided automatically
+  currentWinners.forEach((w, idx) => {
+    if (w.status === 'pending') voidWinner(idx);
+  });
+  closePopup();
+  renderNameList();
+  loadPrizes(); // refresh remaining counts
+  setHint(pool.length > 0 ? '點擊影片開始下一輪抽獎 🎲' : '🎊 名單全部抽完！');
+}
+
+function closePopup() {
+  // If any pending remain, treat as voided
+  currentWinners.forEach((w, idx) => {
+    if (w.status === 'pending') voidWinner(idx);
+  });
+  document.getElementById('popup-bg').classList.remove('show');
+  renderNameList();
+}
+
+// ══ SAVE ══
+async function saveResultToSheet(winner, tickets, prize) {
+  if (!CONFIG.url) return;
+  try {
+    await fetch(CONFIG.url, { method:'POST', body: JSON.stringify({ action:'saveResult', winner, tickets, prize }) });
+    if (prize) setTimeout(loadPrizes, 800);
+  } catch(e) { console.error('寫入失敗', e); }
+}
+
+// ══ HISTORY ══
+function addHistory(name, tickets, prize) {
+  historyCount++;
+  const list  = document.getElementById('history-list');
+  const badge = document.getElementById('history-badge');
+  const empty = list.querySelector('.empty-state');
+  if (empty) empty.remove();
+  const time = new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' });
+  const item = document.createElement('div');
+  item.className = 'history-item';
+  item.innerHTML = `
+    <div class="history-rank">${historyCount}</div>
+    <div class="history-info">
+      <div class="history-name">${name}</div>
+      <div class="history-meta">${prize ? prize+'・' : ''}🎟 ${tickets} 張・${time}</div>
+    </div>`;
+  list.prepend(item);
+  badge.textContent = historyCount;
+}
+
+function setHint(msg) { document.getElementById('status-hint').textContent = msg; }
+
+// ══ CONFETTI ══
+function launchConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const colors = ['#5A8A5E','#E8884A','#F0C848','#B8C8D8','#7FB87F','#C8DFC8','#FDFAF4','#4A3728'];
+  const pieces = Array.from({length:120}, () => ({
+    x:Math.random()*canvas.width, y:-10-Math.random()*80,
+    w:7+Math.random()*9, h:4+Math.random()*5,
+    color:colors[Math.floor(Math.random()*colors.length)],
+    rot:Math.random()*Math.PI*2,
+    vx:(Math.random()-.5)*5, vy:2+Math.random()*4,
+    vr:(Math.random()-.5)*.18, alpha:1,
+  }));
+  (function animate() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    let any=false;
+    for(const p of pieces){
+      p.x+=p.vx; p.y+=p.vy; p.vy+=.08; p.rot+=p.vr;
+      if(p.y>canvas.height*.65) p.alpha-=.018;
+      if(p.alpha>0){
+        any=true; ctx.save(); ctx.globalAlpha=Math.max(0,p.alpha);
+        ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle=p.color;
+        ctx.beginPath(); ctx.roundRect(-p.w/2,-p.h/2,p.w,p.h,2); ctx.fill(); ctx.restore();
+      }
+    }
+    if(any) requestAnimationFrame(animate);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  })();
+}
+</script>
+</body>
+</html>

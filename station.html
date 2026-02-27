@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>舒芙壯舉 — 關主登記</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green:       #5A8A5E;
+    --green-light: #7FB87F;
+    --green-pale:  #C8DFC8;
+    --green-dark:  #3A5C3E;
+    --cream:       #F5F0E0;
+    --cream-dark:  #E8DFC8;
+    --brown:       #4A3728;
+    --brown-mid:   #7A5C44;
+    --brown-light: #C4A882;
+    --orange:      #E8884A;
+    --yellow:      #F0C848;
+    --white:       #FDFAF4;
+    --sky:         #B8C8D8;
+    --red:         #D95F52;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--sky);
+    font-family: 'Noto Sans TC', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.3) 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+    pointer-events: none;
+  }
+
+  /* ── HEADER ── */
+  header {
+    width: 100%;
+    background: var(--green-dark);
+    border-bottom: 3px solid var(--brown);
+    padding: 16px 20px;
+    display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 10;
+    box-shadow: 0 3px 0 var(--brown);
+  }
+
+  .header-icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--cream); border: 2px solid var(--brown-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+
+  .header-text h1 {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900; font-size: 17px; color: var(--cream);
+  }
+  .header-text p {
+    font-size: 11px; color: var(--green-pale); letter-spacing: 2px;
+  }
+
+  /* ── MAIN CARD ── */
+  .card {
+    background: var(--white);
+    border: 3px solid var(--brown);
+    border-radius: 20px;
+    box-shadow: 6px 6px 0 var(--brown);
+    padding: 28px 24px;
+    width: calc(100% - 32px);
+    max-width: 480px;
+    margin: 24px 16px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .card-title {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900; font-size: 18px; color: var(--brown);
+    margin-bottom: 24px; text-align: center;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+
+  /* ── STATION SELECT ── */
+  .station-label {
+    font-size: 11px; font-weight: 700; color: var(--brown-mid);
+    letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;
+    display: block;
+  }
+
+  .station-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px; margin-bottom: 24px;
+  }
+
+  .station-btn {
+    background: var(--cream);
+    border: 2.5px solid var(--cream-dark);
+    border-radius: 14px;
+    padding: 16px 8px;
+    text-align: center; cursor: pointer;
+    transition: all 0.15s;
+    -webkit-appearance: none; appearance: none;
+  }
+
+  .station-btn:active { transform: scale(0.95); }
+
+  .station-btn.selected {
+    background: var(--green);
+    border-color: var(--brown);
+    box-shadow: 3px 3px 0 var(--brown);
+  }
+
+  .station-btn .s-icon { font-size: 24px; display: block; margin-bottom: 4px; }
+  .station-btn .s-name {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900; font-size: 13px; color: var(--brown);
+  }
+  .station-btn.selected .s-name { color: var(--white); }
+
+  /* ── INPUT FIELDS ── */
+  .field { margin-bottom: 18px; }
+
+  .field label {
+    display: block; font-size: 11px; font-weight: 700;
+    color: var(--brown-mid); letter-spacing: 2px;
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+
+  .field input {
+    width: 100%;
+    background: var(--cream);
+    border: 2.5px solid var(--cream-dark);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 16px; /* prevent zoom on iOS */
+    color: var(--brown);
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none; appearance: none;
+  }
+  .field input:focus { border-color: var(--green); }
+  .field input::placeholder { color: var(--brown-light); }
+
+  /* Number input — hide spinners */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+
+  /* Ticket counter */
+  .ticket-counter {
+    display: flex; align-items: center; gap: 0;
+    border: 2.5px solid var(--cream-dark);
+    border-radius: 12px; overflow: hidden;
+    background: var(--cream);
+    transition: border-color 0.2s;
+  }
+  .ticket-counter:focus-within { border-color: var(--green); }
+
+  .counter-btn {
+    width: 52px; height: 52px;
+    background: var(--cream-dark); border: none;
+    font-size: 22px; font-weight: 900; color: var(--brown);
+    cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+    -webkit-appearance: none; appearance: none;
+    font-family: 'Nunito', sans-serif;
+  }
+  .counter-btn:active { background: var(--brown-light); }
+  .counter-btn.plus { background: var(--green-pale); }
+  .counter-btn.plus:active { background: var(--green-light); }
+
+  .counter-input {
+    flex: 1; border: none !important; border-radius: 0 !important;
+    text-align: center; font-size: 22px !important; font-weight: 700;
+    background: var(--cream) !important;
+    padding: 0 !important;
+    height: 52px;
+  }
+
+  /* ── SUBMIT BTN ── */
+  .submit-btn {
+    width: 100%;
+    background: var(--orange);
+    color: var(--white);
+    border: 3px solid var(--brown);
+    border-radius: 14px;
+    padding: 16px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900; font-size: 17px; letter-spacing: 2px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--brown);
+    transition: all 0.15s;
+    margin-top: 8px;
+    -webkit-appearance: none; appearance: none;
+  }
+  .submit-btn:active { transform: translate(3px,3px); box-shadow: 1px 1px 0 var(--brown); }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--brown);
+    color: var(--cream);
+    font-family: 'Nunito', sans-serif; font-weight: 700;
+    font-size: 14px; letter-spacing: 1px;
+    padding: 14px 28px; border-radius: 40px;
+    z-index: 999; white-space: nowrap;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--red); }
+  .toast.success { background: var(--green-dark); }
+
+  /* ── RECENT LOG ── */
+  .recent-title {
+    font-size: 11px; font-weight: 700; color: var(--brown-mid);
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 10px; margin-top: 4px;
+  }
+
+  .log-list { list-style: none; }
+
+  .log-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-radius: 10px; margin-bottom: 6px;
+    background: var(--cream); border: 2px solid var(--cream-dark);
+    animation: fadeUp 0.3s ease forwards;
+  }
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(8px); }
+    to { opacity:1; transform: translateY(0); }
+  }
+
+  .log-station {
+    font-size: 11px; font-weight: 900; font-family: 'Nunito', sans-serif;
+    padding: 3px 8px; border-radius: 8px;
+    color: var(--white); background: var(--green);
+    border: 1.5px solid var(--brown); flex-shrink: 0;
+  }
+  .log-station.s2 { background: var(--orange); }
+  .log-station.s3 { background: var(--brown-mid); }
+
+  .log-name { font-size: 14px; font-weight: 700; color: var(--brown); flex: 1; }
+  .log-tickets {
+    font-family: 'Nunito', sans-serif; font-size: 13px;
+    font-weight: 900; color: var(--green-dark);
+  }
+
+  /* ── CONFIG (URL setting) ── */
+  .cfg-section {
+    width: calc(100% - 32px); max-width: 480px;
+    margin: 0 16px 24px;
+    background: rgba(255,255,255,0.5);
+    border: 2px solid rgba(74,55,40,0.15);
+    border-radius: 14px;
+    padding: 14px 18px;
+    position: relative; z-index: 1;
+  }
+  .cfg-section summary {
+    font-size: 12px; font-weight: 700; color: var(--brown-mid);
+    letter-spacing: 1px; cursor: pointer; list-style: none;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .cfg-section summary::-webkit-details-marker { display: none; }
+  .cfg-section[open] summary { margin-bottom: 12px; }
+  .cfg-url-input {
+    width: 100%; background: var(--white);
+    border: 2px solid var(--cream-dark); border-radius: 10px;
+    padding: 10px 12px; font-size: 13px; color: var(--brown);
+    outline: none; font-family: 'Noto Sans TC', sans-serif;
+  }
+  .cfg-url-input:focus { border-color: var(--green); }
+  .cfg-save-btn {
+    margin-top: 8px; width: 100%;
+    background: var(--green); color: var(--white);
+    border: 2px solid var(--brown); border-radius: 10px;
+    padding: 9px; font-family: 'Nunito', sans-serif;
+    font-weight: 900; font-size: 13px; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-icon">🏋️</div>
+  <div class="header-text">
+    <h1>舒芙壯舉</h1>
+    <p>關主登記系統</p>
+  </div>
+</header>
+
+<!-- URL Config -->
+<details class="cfg-section" id="cfg-details">
+  <summary>⚙ Apps Script URL 設定</summary>
+  <input type="url" class="cfg-url-input" id="cfg-url" placeholder="貼上 Web App URL...">
+  <button class="cfg-save-btn" onclick="saveUrl()">儲存</button>
+</details>
+
+<!-- Main Card -->
+<div class="card">
+  <div class="card-title">🎟 抽獎券登記</div>
+
+  <!-- Station Select -->
+  <span class="station-label">選擇關卡</span>
+  <div class="station-grid">
+    <button class="station-btn" onclick="selectStation(1)" id="btn-s1">
+      <span class="s-icon">1️⃣</span>
+      <span class="s-name">關卡一</span>
+    </button>
+    <button class="station-btn" onclick="selectStation(2)" id="btn-s2">
+      <span class="s-icon">2️⃣</span>
+      <span class="s-name">關卡二</span>
+    </button>
+    <button class="station-btn" onclick="selectStation(3)" id="btn-s3">
+      <span class="s-icon">3️⃣</span>
+      <span class="s-name">關卡三</span>
+    </button>
+  </div>
+
+  <!-- Name -->
+  <div class="field">
+    <label>參與者姓名</label>
+    <input type="text" id="input-name" placeholder="請輸入姓名" autocomplete="off"
+           autocorrect="off" autocapitalize="off" spellcheck="false">
+  </div>
+
+  <!-- Tickets -->
+  <div class="field">
+    <label>抽獎券數量</label>
+    <div class="ticket-counter">
+      <button class="counter-btn minus" onclick="changeTicket(-1)">－</button>
+      <input class="counter-input" type="number" id="input-tickets"
+             value="1" min="1" max="99" readonly>
+      <button class="counter-btn plus" onclick="changeTicket(1)">＋</button>
+    </div>
+  </div>
+
+  <button class="submit-btn" id="submit-btn" onclick="submitEntry()">
+    登記抽獎券 🎟
+  </button>
+</div>
+
+<!-- Recent Log -->
+<div class="card" style="padding-top:20px;">
+  <div class="recent-title">📋 本次登記紀錄</div>
+  <ul class="log-list" id="log-list">
+    <li style="text-align:center;padding:20px;color:var(--brown-light);font-size:13px;font-weight:600;">
+      尚無登記紀錄
+    </li>
+  </ul>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+let selectedStation = 0;
+let recentLogs = [];
+let SCRIPT_URL = localStorage.getItem('station_url') || '';
+
+document.addEventListener('DOMContentLoaded', () => {
+  const urlInput = document.getElementById('cfg-url');
+  urlInput.value = SCRIPT_URL;
+  if (!SCRIPT_URL) {
+    document.getElementById('cfg-details').open = true;
+  }
+});
+
+function saveUrl() {
+  SCRIPT_URL = document.getElementById('cfg-url').value.trim();
+  localStorage.setItem('station_url', SCRIPT_URL);
+  document.getElementById('cfg-details').open = false;
+  showToast('✅ URL 已儲存', 'success');
+}
+
+function selectStation(n) {
+  selectedStation = n;
+  [1,2,3].forEach(i => {
+    document.getElementById(`btn-s${i}`).classList.toggle('selected', i === n);
+  });
+}
+
+function changeTicket(delta) {
+  const input = document.getElementById('input-tickets');
+  const val = parseInt(input.value) || 1;
+  const newVal = Math.min(99, Math.max(1, val + delta));
+  input.value = newVal;
+}
+
+async function submitEntry() {
+  if (!selectedStation) { showToast('⚠️ 請先選擇關卡', 'error'); return; }
+
+  const name = document.getElementById('input-name').value.trim();
+  if (!name) { showToast('⚠️ 請輸入姓名', 'error'); return; }
+
+  const tickets = parseInt(document.getElementById('input-tickets').value) || 1;
+  if (!SCRIPT_URL) { showToast('⚠️ 請先設定 URL', 'error'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = '登記中...';
+
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'addTicket',
+        station: selectedStation,
+        name: name,
+        tickets: tickets,
+      })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || '登記失敗');
+
+    showToast(`✅ ${name} 登記 ${tickets} 張成功！`, 'success');
+    addLog(selectedStation, name, tickets);
+
+    // Reset
+    document.getElementById('input-name').value = '';
+    document.getElementById('input-tickets').value = 1;
+
+  } catch(e) {
+    showToast('❌ 登記失敗：' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '登記抽獎券 🎟';
+  }
+}
+
+function addLog(station, name, tickets) {
+  const list = document.getElementById('log-list');
+  const placeholder = list.querySelector('li[style]');
+  if (placeholder) placeholder.remove();
+
+  const li = document.createElement('li');
+  li.className = 'log-item';
+  const stationClass = station === 2 ? 's2' : station === 3 ? 's3' : '';
+  li.innerHTML = `
+    <span class="log-station ${stationClass}">關${station}</span>
+    <span class="log-name">${name}</span>
+    <span class="log-tickets">🎟 ${tickets} 張</span>
+  `;
+  list.prepend(li);
+}
+
+let toastTimer;
+function showToast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (type ? ' ' + type : '') + ' show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    el.classList.remove('show');
+  }, 2500);
+}
+</script>
+</body>
+</html>
